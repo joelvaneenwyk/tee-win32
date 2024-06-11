@@ -2,12 +2,12 @@
 
 A simple [**`tee`**](https://en.wikipedia.org/wiki/Tee_(command)) implementation for Microsoft Windows.
 
-![tee](etc/images/tee.png)  
+![tee](etc/images/tee.png)
 <small>(image created by [Sven](https://commons.wikimedia.org/wiki/User:Sven), CC BY-SA 4.0)</small>
 
 ## Usage
 
-```
+```bash
 tee for Windows
 
 Copy standard input to output file(s), and also to standard output.
@@ -26,7 +26,8 @@ Options:
 ### Terminal output
 
 Tee can be used as an intermediate buffer (i.e. *without* writing to a file) to greatly speed-up terminal output:
-```
+
+```bash
 gizmo.exe [...] | tee.exe NUL
 ```
 
@@ -50,8 +51,8 @@ Git mirrors for this project:
 
 ## License
 
-Copyright (c) 2023 “dEajL3kA” &lt;Cumpoing79@web.de&gt;  
-This work has been released under the MIT license. See [LICENSE.txt](LICENSE.txt) for details!
+Copyright (c) 2023 "dEajL3kA" <Cumpoing79@web.de>
+This work has been released under the MIT license. See [LICENSE](LICENSE) for details!
 
 ### Acknowledgement
 
