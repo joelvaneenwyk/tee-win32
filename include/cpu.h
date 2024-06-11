@@ -24,7 +24,8 @@
 #elif defined(_M_X64)
 #define PROCESSOR_ARCHITECTURE L"AMD64"
 #define PROCESSOR_BITNESS 64U
-#elif defined(_M_IX86)
+// We include '_WIN32' here to allow resources to load correctly in Visual Studio
+#elif defined(_M_IX86) || defined(_WIN32)
 #define PROCESSOR_ARCHITECTURE L"x86"
 #define PROCESSOR_BITNESS 32U
 #else
