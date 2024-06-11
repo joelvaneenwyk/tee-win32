@@ -15,8 +15,10 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
  * OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 #define WIN32_LEAN_AND_MEAN 1
 #include <Windows.h>
+#include <strsafe.h>
 #include <ShellAPI.h>
 #include <intrin.h>
 #include <stdarg.h>
@@ -123,13 +125,18 @@ static wchar_t *concat_va(const wchar_t *const first, ...)
     }
     va_end(ap);
 
-    wchar_t *const buffer = (wchar_t*)LocalAlloc(LPTR, sizeof(wchar_t) * (len + 1U));
+    const size_t bufferSize = sizeof(wchar_t) * (len + 1U);
+    wchar_t *const buffer = (wchar_t*)LocalAlloc(LPTR, bufferSize);
     if (buffer)
     {
         va_start(ap, first);
         for (ptr = first; ptr != NULL; ptr = va_arg(ap, const wchar_t*))
         {
-            lstrcatW(buffer, ptr);
+            const HRESULT result = StringCchCatW(buffer, bufferSize, ptr);
+            if (result != S_OK)
+            {
+                break;
+            }
         }
         va_end(ap);
     }
@@ -272,6 +279,7 @@ typedef struct _thread
 {
     HANDLE hOutput, hError;
     BOOL flush;
+    char _padding[4];
 }
 thread_t;
 
@@ -356,7 +364,7 @@ options_t;
 
 #define PARSE_OPTION(SHRT, NAME) do \
 { \
-    if ((lc == L##SHRT) || (name && (lstrcmpiW(name, L#NAME) == 0))) \
+    if ((lc == L##SHRT) || (name && (lstrcmpiW(name, L""#NAME) == 0))) \
     { \
         options->NAME = TRUE; \
         return TRUE; \
@@ -436,12 +444,13 @@ static void print_helpscreen(const HANDLE hStdErr, const BOOL full)
 
 int wmain(const int argc, const wchar_t *const argv[])
 {
-    HANDLE hThreads[MAX_THREADS], hMyFiles[MAX_THREADS - 1U];
+    HANDLE hThreads[MAX_THREADS] = {};
+    HANDLE hMyFiles[MAX_THREADS - 1U] = {};
     int exitCode = 1, argOff = 1;
     BOOL myFlag = TRUE, readErrors = FALSE;
     DWORD fileCount = 0U, threadCount = 0U, myIndex = 0U, bytesRead = 0U, totalBytes = 0U;
     PSRWLOCK rwLock = NULL;
-    options_t options;
+    options_t options = {};
     static thread_t threadData[MAX_THREADS];
 
     /* Initialize local variables */
@@ -568,7 +577,7 @@ int wmain(const int argc, const wchar_t *const argv[])
         }
     }
 
-    /* Determine minumum chunk size */
+    /* Determine minimum chunk size */
     const DWORD minimumLength = options.buffer ? (BUFFER_SIZE / 8U) : 1U;
 
     /* Process all input from STDIN stream */
@@ -656,11 +665,11 @@ cleanUp:
     if (pendingThreads > 0U)
     {
         const DWORD result = WaitForMultipleObjects(pendingThreads, hThreads, TRUE, 10000U);
-        if (!((result >= WAIT_OBJECT_0) && (result < WAIT_OBJECT_0 + pendingThreads)))
+        if (result >= WAIT_OBJECT_0 + pendingThreads)
         {
             for (DWORD threadId = 0U; threadId < pendingThreads; ++threadId)
             {
-                if (WaitForSingleObject(hThreads[threadId], 125U) != WAIT_OBJECT_0)
+                if (hThreads[threadId] != 0 && WaitForSingleObject(hThreads[threadId], 125U) != WAIT_OBJECT_0)
                 {
                     write_text(hStdErr, L"[tee] Internal error: Worker thread did not exit cleanly!\n");
                     TerminateThread(hThreads[threadId], 1U);
